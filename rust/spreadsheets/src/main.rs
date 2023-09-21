@@ -1,4 +1,4 @@
-use std::io;
+use std::io::{stdin, stdout, BufRead, BufReader, BufWriter, Stdout, Write};
 struct Coord {
     row: u64,
     col: u64,
@@ -49,8 +49,8 @@ fn lex_alphabet(v: &Vec<char>, index: usize) -> (u64, usize) {
     }
     (res, i)
 }
-fn print_rxcy(coord: &Coord)  {
-    println!("R{}C{}", coord.row, coord.col)
+fn print_rxcy(writer: &mut BufWriter<Stdout>, coord: &Coord) {
+    writeln!(writer, "R{}C{}", coord.row, coord.col).unwrap()
 }
 fn lex_abxy(v: &Vec<char>) -> Option<Coord> {
     let (col, col_end) = lex_alphabet(v, 0);
@@ -76,29 +76,28 @@ fn num_ab(num: u64) -> String {
     v.iter().rev().collect()
 }
 
-fn print_abxy(coord: &Coord) {
-    println!("{}{}", num_ab(coord.col), coord.row)
+fn print_abxy(writer: &mut BufWriter<Stdout>, coord: &Coord) {
+    writeln!(writer, "{}{}", num_ab(coord.col), coord.row).unwrap()
 }
 
-fn count() -> u64 {
-    let mut input = String::new();
-    io::stdin().read_line(&mut input).unwrap();
-    input.trim().parse().unwrap()
-}
 fn main() {
-    let mut count = count();
+    let mut writer = BufWriter::new(stdout());
+    let mut reader = BufReader::new(stdin());
+    let mut count = String::new();
+    reader.read_line(&mut count).unwrap();
+    let mut count = count.trim().parse::<usize>().unwrap();
+    let mut input = String::new();
     while count > 0 {
-        let mut input = String::new();
-        io::stdin().read_line(&mut input).unwrap();
+        reader.read_line(&mut input).unwrap();
         let chars = input.chars().collect::<Vec<char>>();
         if let Some(coord) = lex_rxcy(&chars) {
-             print_abxy(&coord);
+            print_abxy(&mut writer, &coord);
         } else if let Some(coord) = lex_abxy(&chars) {
-           print_rxcy(&coord);
+            print_rxcy(&mut writer, &coord);
         } else {
-            println!("{}", input);
             panic!("unexpected input")
         }
+        input.clear();
         count -= 1;
     }
     // R228C494
