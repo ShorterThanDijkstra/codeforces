@@ -1,3 +1,9 @@
+use std::{
+    time::{SystemTime, UNIX_EPOCH},
+};
+use rand::Rng;
+
+
 fn search(items: &Vec<(u32, u32)>, index: usize, cap: u32) -> (u32, Vec<usize>) {
     if index == items.len() {
         return (0, Vec::new());
@@ -19,9 +25,23 @@ fn search(items: &Vec<(u32, u32)>, index: usize, cap: u32) -> (u32, Vec<usize>) 
         return (search2 + curr_value, vec2);
     }
 }
+fn timer_1() {
+    let cap = 30;
+    let mut items = Vec::new();
+    let mut rng = rand::thread_rng();
+    for _ in 0..50 {
+        let space = rng.gen::<u32>() % cap;
+        let value = rng.gen::<u32>() % 10000;
+        items.push((space, value))
+    }
+    println!("initialized");
+    let start = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+    for _ in 0..100 {
+        search(&items, 0, cap);
+    }
+    let end = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+    println!("duration:{}", end.as_millis() - start.as_millis());
+}
 fn main() {
-    let cap = 4;
-    let items = vec![(1, 15), (3, 20), (4, 30)];
-    let max = search(&items, 0, cap);
-    println!("{:?}", max)
+    timer_1()
 }
