@@ -1,3 +1,4 @@
+mod knapsack;
 use std::{
     cmp,
     io::{stdin, stdout, BufRead, BufReader, BufWriter, Write},

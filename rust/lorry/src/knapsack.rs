@@ -122,6 +122,33 @@ pub fn search_cache(items: &Vec<(u32, u32)>, cap: u32) -> (u32, Vec<usize>) {
     (cache[items.len() - 1][cap as usize], choices)
 }
 
+pub fn search_cache_one_dimension(items: &Vec<(u32, u32)>, cap: u32) -> u32 {
+    let mut cache: Vec<u32> = Vec::new();
+    let (space_fst, value_fst) = items[0];
+    for col in 0..=cap {
+        if col >= space_fst {
+            cache.push(value_fst);
+        } else {
+            cache.push(0);
+        }
+    }
+    for (row, &(space, value)) in items.iter().enumerate() {
+        if row == 0 {
+            continue;
+        }
+        for col in (1..=(cap as usize)).rev() {
+            let no_choose = cache[col];
+            if col < space as usize {
+                cache[col] = no_choose;
+            } else {
+                let choose = cache[col - space as usize] + value;
+                cache[col] = cmp::max(no_choose, choose);
+            }
+        }
+    }
+    cache[cache.len() - 1]
+}
+
 #[test]
 pub fn timer_brute_force() {
     let cap = 30;
@@ -159,3 +186,30 @@ pub fn timer_cache() {
     let end = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
     println!("duration:{}", end.as_millis() - start.as_millis());
 }
+
+#[test]
+pub fn timer_cache_one_dimension() {
+    let cap = 30;
+    let mut items = Vec::new();
+    let mut rng = rand::thread_rng();
+    for _ in 0..1000 {
+        let space = rng.gen::<u32>() % cap;
+        let value = rng.gen::<u32>() % 10000;
+        items.push((space, value))
+    }
+    println!("initialized");
+    let start = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+    for _ in 0..900 {
+        search_cache_one_dimension(&items, cap);
+    }
+    let end = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+    println!("duration:{}", end.as_millis() - start.as_millis());
+}
+
+#[test]
+pub fn test_cache_one_dimension() {
+   let items = vec![(1,15),(2,20),(4,30)];
+   let cap = 4;
+   println!("{:?}", search_cache_one_dimension(&items, cap));
+}
+
