@@ -122,14 +122,14 @@ pub fn search_cache(items: &Vec<(u32, u32)>, cap: u32) -> (u32, Vec<usize>) {
     (cache[items.len() - 1][cap as usize], choices)
 }
 
-pub fn search_cache_one_dimension(items: &Vec<(u32, u32)>, cap: u32) -> u32 {
-    let mut cache: Vec<u32> = Vec::new();
+pub fn search_cache_one_dimension(items: &Vec<(u32, u32)>, cap: u32) -> (u32, Vec<usize>) {
+    let mut cache: Vec<(u32, Vec<usize>)> = Vec::new();
     let (space_fst, value_fst) = items[0];
     for col in 0..=cap {
         if col >= space_fst {
-            cache.push(value_fst);
+            cache.push((value_fst, vec![0]));
         } else {
-            cache.push(0);
+            cache.push((0, Vec::new()));
         }
     }
     for (row, &(space, value)) in items.iter().enumerate() {
@@ -137,16 +137,17 @@ pub fn search_cache_one_dimension(items: &Vec<(u32, u32)>, cap: u32) -> u32 {
             continue;
         }
         for col in (1..=(cap as usize)).rev() {
-            let no_choose = cache[col];
-            if col < space as usize {
-                cache[col] = no_choose;
-            } else {
-                let choose = cache[col - space as usize] + value;
-                cache[col] = cmp::max(no_choose, choose);
+            if col >= space as usize {
+                let (no_choose, _) = cache[col];
+                let (choose,  mut choices) = cache[col - space as usize].clone();
+                if no_choose < choose + value {
+                    choices.push(row);
+                    cache[col] = (choose + value, choices);
+                }
             }
         }
     }
-    cache[cache.len() - 1]
+    cache[cache.len() - 1].clone()
 }
 
 #[test]
@@ -208,8 +209,7 @@ pub fn timer_cache_one_dimension() {
 
 #[test]
 pub fn test_cache_one_dimension() {
-   let items = vec![(1,15),(2,20),(4,30)];
-   let cap = 4;
-   println!("{:?}", search_cache_one_dimension(&items, cap));
+    let items = vec![(1, 15), (2, 20), (4, 36)];
+    let cap = 4;
+    println!("{:?}", search_cache_one_dimension(&items, cap));
 }
-
