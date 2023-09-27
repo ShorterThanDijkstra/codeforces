@@ -1,4 +1,7 @@
-use std::io::{stdin, stdout, BufRead, BufReader, BufWriter, Write};
+use std::{
+    collections::BinaryHeap,
+    io::{stdin, stdout, BufRead, BufReader, BufWriter, Write},
+};
 
 fn main() {
     let mut reader = BufReader::new(stdin());
@@ -7,46 +10,87 @@ fn main() {
     let mut split = input.split_whitespace();
     let count = split.next().unwrap().parse::<usize>().unwrap();
     let cap = split.next().unwrap().parse::<usize>().unwrap();
-    let mut vehicles = Vec::new();
-    for _ in 0..count {
+    let mut vehicles1 = BinaryHeap::new();
+    let mut vehicles2 = BinaryHeap::new();
+    for i in 1..=count {
         input.clear();
         reader.read_line(&mut input).unwrap();
         split = input.split_whitespace();
         let space = split.next().unwrap().parse::<usize>().unwrap();
         let value = split.next().unwrap().parse::<usize>().unwrap();
-        vehicles.push((space, value))
+        if space == 1 {
+            vehicles1.push((value, i))
+        } else {
+            // assert!(space == 2);
+            vehicles2.push((value, i))
+        }
     }
-    let (max, choices) = search_cache_one_dimension(&vehicles, cap);
+
+    let (max, choices) = search_greedy(&mut vehicles1, &mut vehicles2, cap);
     let mut writer = BufWriter::new(stdout());
     writeln!(&mut writer, "{}", max).unwrap();
     for choice in choices {
-        writeln!(&mut writer, "{}", choice + 1).unwrap();
+        writeln!(&mut writer, "{}", choice).unwrap();
     }
 }
-pub fn search_cache_one_dimension(items: &Vec<(usize, usize)>, cap: usize) -> (usize, Vec<usize>) {
-    let mut cache: Vec<(usize, Vec<usize>)> = Vec::new();
-    let (space_fst, value_fst) = items[0];
-    for col in 0..=cap {
-        if col >= space_fst {
-            cache.push((value_fst, vec![0]));
-        } else {
-            cache.push((0, Vec::new()));
-        }
-    }
-    for (row, &(space, value)) in items.iter().enumerate() {
-        if row == 0 {
-            continue;
-        }
-        for col in (1..=cap).rev() {
-            if col >= space as usize {
-                let (no_choose, _) = cache[col];
-                let (choose, mut choices) = cache[col - space].clone();
-                if no_choose < choose + value {
-                    choices.push(row);
-                    cache[col] = (choose + value, choices);
+fn search_greedy(
+    vehicles1: &mut BinaryHeap<(usize, usize)>,
+    vehicles2: &mut BinaryHeap<(usize, usize)>,
+    cap: usize,
+) -> (u128, Vec<usize>) {
+    let mut cap = cap;
+    let mut max: u128 = 0;
+    let mut choices = Vec::new();
+    let mut pre_vehi1 = None;
+    while cap > 0 {
+        if !vehicles1.is_empty() && !vehicles2.is_empty() {
+            let &(value1, index1) = vehicles1.peek().unwrap();
+            let &(value2, index2) = vehicles2.peek().unwrap();
+
+            if value2 as f64 / 2.0 > value1 as f64 {
+                vehicles2.pop();
+                if cap == 1 {
+                    if let Some((pre_choice1, pre_value1)) = pre_vehi1 {
+                        if value2 > pre_value1 {
+                            choices[pre_choice1] = index2;
+                            max = max - pre_value1 as u128 + value2 as u128 ;
+                            cap -= 1;
+                        }
+                    }
+                } else {
+                    max += value2  as u128 ;
+                    cap -= 2;
+                    choices.push(index2);
                 }
+            } else {
+                pre_vehi1 = Some((choices.len(), value1));
+                vehicles1.pop();
+                max += value1  as u128 ;
+                cap -= 1;
+                choices.push(index1);
             }
+        } else if vehicles1.is_empty() {
+            let (value2, index2) = vehicles2.pop().unwrap();
+            if cap == 1 {
+                if let Some((pre_choice1, pre_value1)) = pre_vehi1 {
+                    if value2 > pre_value1 {
+                        choices[pre_choice1] = index2;
+                        max = max - pre_value1  as u128  + value2 as u128 ;
+                        cap -= 1;
+                    }
+                }
+            } else {
+                max += value2 as u128 ;
+                cap -= 2;
+                choices.push(index2);
+            }
+        } else if vehicles2.is_empty() {
+            let (value1, index1) = vehicles1.pop().unwrap();
+            pre_vehi1 = Some((choices.len(), value1));
+            max += value1 as u128 ;
+            cap -= 1;
+            choices.push(index1);
         }
     }
-    cache[cache.len() - 1].clone()
+    (max, choices)
 }
